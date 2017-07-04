@@ -14,15 +14,46 @@ class Trouble {
             string: (result) => this.__getClass(result) === 'String',
             date: (result) => this.__getClass(result) === 'Date',
             array: (result) => this.__getClass(result) === 'Array',
+            undefined: (result) => result === undefined,
+            null: (result) => result === null,
         }
 
         this.actionConditions = {
             contain: (object) => {
                 this.conditions.push((result) => {
+
+                    let containArray = (containObject) => {
+                        containObject.forEach(item => {
+                            if (this.__getClass(item) === 'Array') {
+                                containArray(item)
+                            }
+                            else {
+                                if (result.indexOf(item) !== -1) {
+                                    return true
+                                }
+
+                                return false
+                            }
+                        })
+                    }
+
+                    if (this.__getClass(result) === 'Array') {
+                        if (this.__getClass(object) === 'Array') {
+                            return containArray(object)
+                        }
+                        else {
+                            if (result.indexOf(object) !== -1) {
+                                return true
+                            }
+                            return false
+                        }
+                    }
+
                     if (this.__getClass(result) === 'Array') {
                         if (result.indexOf(object) !== -1) {
                             return true
                         }
+
                         return false
                     }
                     else if (this.__getClass(result) === 'Object') {
@@ -153,12 +184,12 @@ class Pile {
             }
             else {
                 let shouldNext = null
-                let isNext = false
+                let isNext = true
                 this.trouble.conditions.forEach(condition => {
                     let retFlgs = condition(result)
                     if (shouldNext === null) {
                         shouldNext = retFlgs
-                    }else {
+                    } else {
                         isNext = retFlgs
                     }
                 })

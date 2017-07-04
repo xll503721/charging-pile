@@ -1,0 +1,22 @@
+{
+  "name": "power-strip",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://xll503721@github.com/xll503721/charging-pile.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/xll503721/charging-pile/issues"
+  },
+  "homepage": "https://github.com/xll503721/charging-pile#readme",
+  "dependencies": {
+    "mocha": "^3.4.2"
+  }
+}
