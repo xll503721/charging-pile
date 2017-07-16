@@ -80,8 +80,10 @@ class Pile {
         this.class = null
         this.method = {
             name: null,
-            param: null,
-            return: null
+            params: null,
+            return: null,
+            isForEach: false,
+            isSkip: false,
         }
         this.chain = {}
         this.conditions = []
@@ -99,7 +101,7 @@ class Pile {
 
                 let registerMethod = (...args) => {
                     this.method.name = name
-                    this.method.param = args
+                    this.method.params = args
 
                     setImmediate(() => {
                         if (globalPile !== null) {
@@ -130,6 +132,26 @@ class Pile {
                     },
                     get: function () {
                         sthis.method.name = name
+                        return registerMethod
+                    },
+                    configurable: true
+                })
+
+                Object.defineProperty(registerMethod, 'forEachConnect', {
+                    set: function () {
+                    },
+                    get: function () {
+                        sthis.method.isForEach = true
+                        return registerMethod
+                    },
+                    configurable: true
+                })
+
+                Object.defineProperty(registerMethod, 'skipConnect', {
+                    set: function () {
+                    },
+                    get: function () {
+                        sthis.method.isForEach = true
                         return registerMethod
                     },
                     configurable: true
@@ -188,7 +210,7 @@ class Pile {
             //     })
             //     return registerMethod
             // },
-            above: (count)=> {
+            above: (count) => {
                 this.conditions.push((result) => {
                     if (result.length !== undefined) {
                         if (result.length > count) {
@@ -267,7 +289,14 @@ class Pile {
             if (this.method && this.class) {
                 let result = null
                 let object = new this.class()
-                this.method.result = await object[this.method.name](this.method.param)
+
+                if (parameter === undefined) {
+                    let evalString = 'object[this.method.name](' + this.method.params.join(',') + ')'
+                    this.method.result = await eval(evalString)
+                }
+                else {
+                    this.method.result = await object[this.method.name](parameter)
+                }
 
                 if (!this.nextPile) {
                     return this.method.result
