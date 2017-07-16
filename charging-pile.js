@@ -1,10 +1,149 @@
+var globalPile = null
+
 class Trouble {
     constructor() {
         this.conditions = []
 
+
+    }
+
+    extend(obj, prop, retGet, retSet) {
+        let inner = this
+        Object.defineProperty(obj, prop, {
+            set: function () {
+                return retSet
+            },
+            get: function () {
+                let actionCondition = inner.actionConditions[prop]
+                actionCondition !== undefined ? actionCondition : inner.collectConditions(prop)
+                return retGet
+            },
+            configurable: true
+        })
+    }
+
+    setup(action) {
+        let actionMethod = this.findCondition(action)
+
+    }
+
+
+    // setup(obj, prop, retGet, retSet) {
+    //     for (let predicate in this.predicates) {
+    //         this.extend(obj, predicate, obj)
+    //     }
+
+    //     for (let typeCondition in this.typeConditions) {
+    //         this.extend(obj, typeCondition, obj)
+    //     }
+
+    //     for (let actionCondition in this.actionConditions) {
+    //         this.extend(obj, actionCondition, obj)
+    //     }
+    // }
+
+    findCondition(action) {
+        let actionMethod = this.predicates[action]
+        if (actionMethod === undefined) {
+            actionMethod = this.typeConditions[action]
+        }
+        if (actionMethod === undefined) {
+            actionMethod = this.actionConditions[action]
+        }
+
+        return actionMethod
+    }
+
+    collectConditions(action) {
+        let actionMethod = this.predicates[action]
+        if (actionMethod === undefined) {
+            actionMethod = this.typeConditions[action]
+        }
+        if (actionMethod === undefined) {
+            actionMethod = this.actionConditions[action]
+        }
+
+        if (actionMethod !== null && actionMethod !== undefined) {
+            this.conditions.push(actionMethod)
+        }
+    }
+
+    __getClass(object) {
+        return Object.prototype.toString.call(object).match(/^\[object\s(.*)\]$/)[1];
+    };
+}
+
+class Pile {
+    constructor() {
+        this.nextPile = null
+
+        this.class = null
+        this.method = {
+            name: null,
+            param: null,
+            return: null
+        }
+        this.chain = {}
+        this.conditions = []
+
+    }
+
+    setupClassInvokeMethod(Clazz) {
+
+        let object = new Clazz()
+        this.class = Clazz
+        let sthis = this
+
+        Object.getOwnPropertyNames(Object.getPrototypeOf(object)).forEach(name => {
+            if (this.chain[name] === undefined && !(this.chain[name] === Function) && name !== 'constructor') {
+
+                let registerMethod = (...args) => {
+                    this.method.name = name
+                    this.method.param = args
+
+                    setImmediate(() => {
+                        if (globalPile !== null) {
+                            let ret = globalPile.charging()
+                            globalPile = null
+                        }
+                    })
+
+                    return registerMethod
+                }
+
+                //注册 to be
+                this.registerTobe(registerMethod)
+
+                //注册class 方法
+                Object.defineProperty(this.chain, name, {
+                    set: function () {
+                    },
+                    get: function () {
+                        sthis.method.name = name
+                        return registerMethod
+                    },
+                    configurable: true
+                })
+
+                Object.defineProperty(registerMethod, 'connect', {
+                    set: function () {
+                    },
+                    get: function () {
+                        sthis.method.name = name
+                        return registerMethod
+                    },
+                    configurable: true
+                })
+            }
+        })
+
+        return this.chain
+    }
+
+    registerTobe(registerMethod) {
         this.predicates = {
-            a: null,
-            an: null,
+            a: () => true,
+            an: () => true,
             is: (result) => true,
             not: (result) => false,
         }
@@ -22,33 +161,6 @@ class Trouble {
             contain: (object) => {
                 this.conditions.push((result) => {
 
-                    let containArray = (containObject) => {
-                        containObject.forEach(item => {
-                            if (this.__getClass(item) === 'Array') {
-                                containArray(item)
-                            }
-                            else {
-                                if (result.indexOf(item) !== -1) {
-                                    return true
-                                }
-
-                                return false
-                            }
-                        })
-                    }
-
-                    if (this.__getClass(result) === 'Array') {
-                        if (this.__getClass(object) === 'Array') {
-                            return containArray(object)
-                        }
-                        else {
-                            if (result.indexOf(object) !== -1) {
-                                return true
-                            }
-                            return false
-                        }
-                    }
-
                     if (this.__getClass(result) === 'Array') {
                         if (result.indexOf(object) !== -1) {
                             return true
@@ -63,20 +175,20 @@ class Trouble {
                         return false
                     }
                 })
-                return this
+                return registerMethod
             },
-            length: (count) => {
-                this.conditions.push((result) => {
-                    if (result.length !== undefined) {
-                        if (result.length === count) {
-                            return true
-                        }
-                        return false
-                    }
-                })
-                return this
-            },
-            above: (count) => {
+            // length: (count) => {
+            //     this.conditions.push((result) => {
+            //         if (result.length !== undefined) {
+            //             if (result.length === count) {
+            //                 return true
+            //             }
+            //             return false
+            //         }
+            //     })
+            //     return registerMethod
+            // },
+            above: (count)=> {
                 this.conditions.push((result) => {
                     if (result.length !== undefined) {
                         if (result.length > count) {
@@ -85,7 +197,7 @@ class Trouble {
                         return false
                     }
                 })
-                return this
+                return registerMethod
             },
             below: () => {
                 this.conditions.push((result) => {
@@ -96,96 +208,47 @@ class Trouble {
                         return false
                     }
                 })
-                return this
+                return registerMethod
             }
         }
 
-
-        this.loadChain()
-    }
-
-    static extend(prop) {
-        Object.defineProperty(Trouble.prototype, prop, {
-            set: function () {
-            },
-            get: function () {
-                let actionCondition = this.actionConditions[prop]
-                return actionCondition !== undefined ? actionCondition : this.collectConditions(prop)
-            },
-            configurable: true
-        })
-    }
-
-    loadChain() {
-        for (let predicate in this.predicates) {
-            Trouble.extend(predicate)
+        for (let prop in this.predicates) {
+            Object.defineProperty(registerMethod, prop, {
+                set: function () {
+                },
+                get: function () {
+                    this.conditions.push(this.predicates[prop])
+                    return registerMethod
+                },
+                configurable: true
+            })
         }
-
-        for (let typeCondition in this.typeConditions) {
-            Trouble.extend(typeCondition)
+        for (let prop in this.typeConditions) {
+            Object.defineProperty(registerMethod, prop, {
+                set: function () {
+                },
+                get: function () {
+                    this.conditions.push(this.typeConditions[prop])
+                    return registerMethod
+                },
+                configurable: true
+            })
         }
-
-        for (let actionCondition in this.actionConditions) {
-            Trouble.extend(actionCondition)
+        for (let prop in this.actionConditions) {
+            registerMethod[prop] = this.actionConditions[prop]
         }
-    }
-
-    collectConditions(action) {
-        let actionMethod = this.predicates[action] === undefined ? this.typeConditions[action] : this.predicates[action]
-        if (actionMethod !== null && actionMethod !== undefined) {
-            this.conditions.push(actionMethod)
-        }
-        return this
-    }
-
-    __getClass(object) {
-        return Object.prototype.toString.call(object).match(/^\[object\s(.*)\]$/)[1];
-    };
-}
-
-class Pile {
-    constructor() {
-        this.nextPile = null
-
-        this.class = null
-        this.method = null
-        this.trouble = null
-    }
-
-    loadChain(ClazzOrMethod) {
-
-        let object = new ClazzOrMethod()
-        this.class = ClazzOrMethod
-        var chain = {}
-
-        Object.getOwnPropertyNames(Object.getPrototypeOf(object)).forEach(name => {
-            if (!Pile.prototype.hasOwnProperty(name)) {
-                Object.defineProperty(Pile.prototype, name, {
-                    set: function () {
-                    },
-                    get: function () {
-                        this.method = name
-                        this.trouble = new Trouble()
-                        return this.trouble
-                    },
-                    configurable: true
-                })
-
-            }
-        })
-        return this
     }
 
     charging(parameter) {
 
         let condition = (result) => {
-            if (!(this.trouble.conditions.length > 0)) {
-                this.nextPile.charging(result)
+            if (!(this.conditions.length > 0)) {
+                return this.nextPile.charging(result)
             }
             else {
                 let shouldNext = null
                 let isNext = true
-                this.trouble.conditions.forEach(condition => {
+                this.conditions.forEach(condition => {
                     let retFlgs = condition(result)
                     if (shouldNext === null) {
                         shouldNext = retFlgs
@@ -200,103 +263,44 @@ class Pile {
             }
         }
 
-        let method = (hasClazz) => {
-            if (this.method) {
+        let method = async () => {
+            if (this.method && this.class) {
                 let result = null
-                if (hasClazz) {
-                    let object = new this.class()
-                    result = object[this.method](parameter)
-                }
-                else {
-                    result = this.method()
-                }
+                let object = new this.class()
+                this.method.result = await object[this.method.name](this.method.param)
 
                 if (!this.nextPile) {
-                    return result
+                    return this.method.result
                 }
 
-                return condition(result)
+                return condition(this.method.result)
             }
         }
 
-        return method(this.class !== null)
+        return method()
     }
 }
 
-class Electric {
-
-    constructor() {
-
-    }
-
-    static extend(prop) {
-        Object.defineProperty(Electric.prototype, prop, {
-            set: function () {
-            },
-            get: function () {
-                return t.load(this)
-            },
-            configurable: true
-        })
-    }
-
-    _E_invoke(clazzName) {
-        let innerPile = null
-        if (!this.rootPile) {
-            this.rootPile = new Pile()
-            innerPile = this.rootPile
+Object.defineProperty(Function.prototype, 'invoke', {
+    set: function () {
+    },
+    get: function () {
+        let retPile = globalPile
+        if (globalPile === null) {
+            globalPile = new Pile()
+            retPile = globalPile
         }
         else {
-            let innerNextPile = new Pile()
-            this.nextPile = innerNextPile
-            this.rootPile.nextPile = innerNextPile
-            innerPile = innerNextPile
+            while (retPile.nextPile !== null) {
+                retPile = retPile.nextPile
+            }
+
+            let pile = new Pile()
+            retPile.nextPile = pile
+
+            retPile = pile
         }
-
-        return innerPile.loadChain(clazzName)
-    }
-
-    method(methodName) {
-        if (this.nextPile) {
-            this.nextPile.loadChain(methodName)
-        }
-        else {
-            this.rootPile.loadChain(methodName)
-        }
-    }
-
-    _E_start() {
-        let ret = this.rootPile.charging()
-        this.rootPile = null
-        this.nextPile = null
-        return ret
-    }
-
-    _E_connect(methodName) {
-        this.method(methodName)
-        return new Trouble()
-    }
-
-    _E_retrun(ClazzName) {
-        pile.loadChain(ClazzName)
-        return new Trouble()
-    }
-}
-
-let electric = new Electric()
-Trouble.prototype.start = () => {
-    return electric._E_start()
-}
-
-Object.getOwnPropertyNames(Object.getPrototypeOf(electric)).forEach(method => {
-    if (method.startsWith('_E_')) {
-        Object.defineProperty(Function.prototype, method.substring(3), {
-            set: function () {
-            },
-            get: function () {
-                return electric[method](this)
-            },
-            configurable: true
-        })
-    }
+        return retPile.setupClassInvokeMethod(this)
+    },
+    configurable: true
 })
