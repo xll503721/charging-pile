@@ -136,26 +136,6 @@ class Pile {
                     },
                     configurable: true
                 })
-
-                Object.defineProperty(registerMethod, 'forEachConnect', {
-                    set: function () {
-                    },
-                    get: function () {
-                        sthis.method.isForEach = true
-                        return registerMethod
-                    },
-                    configurable: true
-                })
-
-                Object.defineProperty(registerMethod, 'skipConnect', {
-                    set: function () {
-                    },
-                    get: function () {
-                        sthis.method.isForEach = true
-                        return registerMethod
-                    },
-                    configurable: true
-                })
             }
         })
 
@@ -180,6 +160,18 @@ class Pile {
         }
 
         this.actionConditions = {
+            forEach: (func) => {
+                this.conditions.push((result) => {
+                    if (result instanceof Array) {
+                        result.forEach((value, index, array) => {
+                            func(value, index)
+                        })
+                        return true
+                    }
+                    return false
+                })
+                return registerMethod
+            },
             contain: (object) => {
                 this.conditions.push((result) => {
 
@@ -291,8 +283,16 @@ class Pile {
                 let object = new this.class()
 
                 if (parameter === undefined) {
-                    let evalString = 'object[this.method.name](' + this.method.params.join(',') + ')'
-                    this.method.result = await eval(evalString)
+                    if (parameter instanceof Array && this.conditions.indexOf(this.actionConditions.forEach) !== -1) {
+                        parameter.forEach(param => {
+                            let evalString = 'object[this.method.name](' + (this.method.params.length > 0 ? this.method.params.join(',') : param) + ')'
+                            this.method.result = await eval(evalString)
+                        })
+                    }
+                    else {
+                        let evalString = 'object[this.method.name](' + (this.method.params.length > 0 ? this.method.params.join(',') : parameter) + ')'
+                        this.method.result = await eval(evalString)
+                    }
                 }
                 else {
                     this.method.result = await object[this.method.name](parameter)
