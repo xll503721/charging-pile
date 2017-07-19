@@ -105,7 +105,7 @@ class Pile {
 
                 let registerMethod = (...args) => {
                     this.method.name = name
-                    args.forEach(arg=> {
+                    args.forEach(arg => {
                         let param = arg
                         if (this.__getClass(param) === 'String') {
                             param = "'" + param + "'"
@@ -293,14 +293,14 @@ class Pile {
                 let object = new this.class()
 
                 let evalString = 'object[this.method.name]('
-                if (this.method.params) {
+                if (this.method.params.length > 0) {
                     evalString += this.method.params.join(',')
+                    evalString += ')'
+                    this.method.result = await eval(evalString)
                 }
                 else {
-                    evalString += parameter
+                    this.method.result = await object[this.method.name](parameter)
                 }
-                evalString += ')'
-                this.method.result = await eval(evalString)
 
                 if (!this.nextPile) {
                     return this.method.result
