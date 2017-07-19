@@ -1,6 +1,6 @@
 class My {
-    myTest(tt) {
-        console.log('print my ' + tt)
+    myTest(tt, qq) {
+        console.log('print my ' + tt + ' ' + qq)
         return ['11', '22']
     }
 
@@ -14,8 +14,8 @@ class My {
 }
 
 class You {
-    youTest(tt) {
-        console.log('you ' + tt)
+    youTest(tt, rr) {
+        console.log('you ' + tt + rr)
         return 'yy'
     }
 
@@ -26,8 +26,8 @@ class You {
 require('./charging-pile.js')
 
 // My.invoke.myTest('tt').contain([['22']]).connect
-let t = My.invoke.myTest('1234567890').above(10).connect
-console.log(You.invoke.youTest(11))
+let t = My.invoke.myTest('1234567890', 'qwe').above(0).connect
+console.log(You.invoke.youTest)
 
 
 

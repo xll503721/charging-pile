@@ -80,7 +80,7 @@ class Pile {
         this.class = null
         this.method = {
             name: null,
-            params: null,
+            params: [],
             return: null,
             isForEach: false,
             isSkip: false,
@@ -89,6 +89,10 @@ class Pile {
         this.conditions = []
 
     }
+
+    __getClass(object) {
+        return Object.prototype.toString.call(object).match(/^\[object\s(.*)\]$/)[1];
+    };
 
     setupClassInvokeMethod(Clazz) {
 
@@ -101,7 +105,13 @@ class Pile {
 
                 let registerMethod = (...args) => {
                     this.method.name = name
-                    this.method.params = args
+                    args.forEach(arg=> {
+                        let param = arg
+                        if (this.__getClass(param) === 'String') {
+                            param = "'" + param + "'"
+                        }
+                        this.method.params.push(param)
+                    })
 
                     setImmediate(() => {
                         if (globalPile !== null) {
@@ -282,21 +292,15 @@ class Pile {
                 let result = null
                 let object = new this.class()
 
-                if (parameter === undefined) {
-                    if (parameter instanceof Array && this.conditions.indexOf(this.actionConditions.forEach) !== -1) {
-                        parameter.forEach(param => {
-                            let evalString = 'object[this.method.name](' + (this.method.params.length > 0 ? this.method.params.join(',') : param) + ')'
-                            this.method.result = await eval(evalString)
-                        })
-                    }
-                    else {
-                        let evalString = 'object[this.method.name](' + (this.method.params.length > 0 ? this.method.params.join(',') : parameter) + ')'
-                        this.method.result = await eval(evalString)
-                    }
+                let evalString = 'object[this.method.name]('
+                if (this.method.params) {
+                    evalString += this.method.params.join(',')
                 }
                 else {
-                    this.method.result = await object[this.method.name](parameter)
+                    evalString += parameter
                 }
+                evalString += ')'
+                this.method.result = await eval(evalString)
 
                 if (!this.nextPile) {
                     return this.method.result
