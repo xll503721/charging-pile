@@ -87,7 +87,9 @@ class Pile {
         }
         this.chain = {}
         this.conditions = []
-
+        this.selfConditions = {
+            flagConditions: []
+        }
     }
 
     __getClass(object) {
@@ -169,19 +171,23 @@ class Pile {
             null: (result) => result === null,
         }
 
-        this.actionConditions = {
-            forEach: (func) => {
-                this.conditions.push((result) => {
-                    if (result instanceof Array) {
-                        result.forEach((value, index, array) => {
-                            func(value, index)
-                        })
-                        return true
-                    }
-                    return false
-                })
+        this.flagConditions = {
+            forEach: '',
+            forEachParam: ''
+        }
+
+        this.selfActionConditions = {
+            before: (beforeFunc) => {
+                this.selfConditions.before = beforeFunc
                 return registerMethod
             },
+            after: (afterFunc) => {
+                this.selfConditions.after = afterFunc
+                return registerMethod
+            },
+        }
+
+        this.actionConditions = {
             contain: (object) => {
                 this.conditions.push((result) => {
 
@@ -236,12 +242,14 @@ class Pile {
             }
         }
 
+        let sthis = this
+
         for (let prop in this.predicates) {
             Object.defineProperty(registerMethod, prop, {
                 set: function () {
                 },
                 get: function () {
-                    this.conditions.push(this.predicates[prop])
+                    sthis.conditions.push(this.predicates[prop])
                     return registerMethod
                 },
                 configurable: true
@@ -252,7 +260,18 @@ class Pile {
                 set: function () {
                 },
                 get: function () {
-                    this.conditions.push(this.typeConditions[prop])
+                    sthis.conditions.push(this.typeConditions[prop])
+                    return registerMethod
+                },
+                configurable: true
+            })
+        }
+        for (let prop in this.flagConditions) {
+            Object.defineProperty(registerMethod, prop, {
+                set: function () {
+                },
+                get: function () {
+                    sthis.selfConditions.flagConditions.push(prop)
                     return registerMethod
                 },
                 configurable: true
@@ -260,6 +279,9 @@ class Pile {
         }
         for (let prop in this.actionConditions) {
             registerMethod[prop] = this.actionConditions[prop]
+        }
+        for (let prop in this.selfActionConditions) {
+            registerMethod[prop] = this.selfActionConditions[prop]
         }
     }
 
@@ -292,14 +314,34 @@ class Pile {
                 let result = null
                 let object = new this.class()
 
+                let before = this.selfConditions.before
+                let after = this.selfConditions.after
+
                 let evalString = 'object[this.method.name]('
                 if (this.method.params.length > 0) {
                     evalString += this.method.params.join(',')
                     evalString += ')'
+                    after && after(null, 1)
                     this.method.result = await eval(evalString)
+                    before && before(this.method.result, 1)
+                }
+                else if (this.__getClass(parameter) === 'Array') {
+                    if (this.selfConditions.flagConditions.indexOf('forEach') !== -1) {
+                        for (let i = 0; i < parameter.length; i++) {
+                            let param = parameter[i]
+                            after && after(null, i)
+                            this.method.result = await object[this.method.name](param)
+                            before && before(this.method.result, i)
+                        }
+                    }
+                    else {
+
+                    }
                 }
                 else {
+                    after && after(null, 1)
                     this.method.result = await object[this.method.name](parameter)
+                    before && before(this.method.result, 1)
                 }
 
                 if (!this.nextPile) {
