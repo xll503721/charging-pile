@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/xll503721/charging-pile#readme",
   "dependencies": {
-    "mocha": "^3.4.2"
+    "mocha": "^3.4.2",
+    "node-fetch": "^1.7.1"
   }
 }

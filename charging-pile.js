@@ -199,8 +199,10 @@ class Pile {
                         return false
                     }
                     else if (this.__getClass(result) === 'Object') {
-                        if (result[object] !== undefined) {
-                            return true
+                        for (let prop in object) {
+                            if (result[prop] === object[prop]) {
+                                return true
+                            }
                         }
                         return false
                     }
@@ -311,37 +313,32 @@ class Pile {
 
         let method = async () => {
             if (this.method && this.class) {
-                let result = null
                 let object = new this.class()
 
                 let before = this.selfConditions.before
                 let after = this.selfConditions.after
 
-                let evalString = 'object[this.method.name]('
+                let params = parameter
+                let loop = 1
                 if (this.method.params.length > 0) {
-                    evalString += this.method.params.join(',')
-                    evalString += ')'
-                    after && after(null, 1)
-                    this.method.result = await eval(evalString)
-                    before && before(this.method.result, 1)
-                }
-                else if (this.__getClass(parameter) === 'Array') {
-                    if (this.selfConditions.flagConditions.indexOf('forEach') !== -1) {
-                        for (let i = 0; i < parameter.length; i++) {
-                            let param = parameter[i]
-                            after && after(null, i)
-                            this.method.result = await object[this.method.name](param)
-                            before && before(this.method.result, i)
-                        }
+                    params = this.method.params
+                    if (this.method.params[0].params !== undefined) {
+                        params = [this.method.params[0].params]
                     }
-                    else {
+                }
 
-                    }
+                if (this.__getClass(params) === 'Array' && this.selfConditions.flagConditions.indexOf('forEach') !== -1) {
+                    loop = params.length
                 }
-                else {
-                    after && after(null, 1)
-                    this.method.result = await object[this.method.name](parameter)
-                    before && before(this.method.result, 1)
+
+                for (let i = 0; i < loop; i++) {
+                    let param = params
+                    if (loop > 1) {
+                        param = [params[i]]
+                    }
+                    after && after(null, i)
+                    this.method.result = await object[this.method.name].apply(object, param)
+                    before && before(this.method.result, i)
                 }
 
                 if (!this.nextPile) {
