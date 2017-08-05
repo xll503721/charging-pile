@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 require('../charging-pile.js')
 require("should")
 
@@ -60,6 +61,12 @@ describe("测方法桩功能", function() {
         }).before((result=> {
             result.should.eql("DB.GETTest");
         }))
+=======
+describe("测试记录服务的方法", function() {
+
+    it("插入一个记录", function() {
+        
+>>>>>>> 3672bddfda53ab4cc2bae25a821ee27952237951
     })
     
     it("查询一个记录", function() {
