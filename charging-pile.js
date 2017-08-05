@@ -107,13 +107,7 @@ class Pile {
 
                 let registerMethod = (...args) => {
                     this.method.name = name
-                    args.forEach(arg => {
-                        let param = arg
-                        if (this.__getClass(param) === 'String') {
-                            param = "'" + param + "'"
-                        }
-                        this.method.params.push(param)
-                    })
+                    this.method.params = args
 
                     setImmediate(() => {
                         if (globalPile !== null) {
@@ -209,17 +203,17 @@ class Pile {
                 })
                 return registerMethod
             },
-            // length: (count) => {
-            //     this.conditions.push((result) => {
-            //         if (result.length !== undefined) {
-            //             if (result.length === count) {
-            //                 return true
-            //             }
-            //             return false
-            //         }
-            //     })
-            //     return registerMethod
-            // },
+            lengthEqual: (count) => {
+                this.conditions.push((result) => {
+                    if (result.length !== undefined) {
+                        if (result.length === count) {
+                            return true
+                        }
+                        return false
+                    }
+                })
+                return registerMethod
+            },
             above: (count) => {
                 this.conditions.push((result) => {
                     if (result.length !== undefined) {
@@ -231,10 +225,10 @@ class Pile {
                 })
                 return registerMethod
             },
-            below: () => {
+            below: (count) => {
                 this.conditions.push((result) => {
                     if (result.length !== undefined) {
-                        if (result.length < count) {
+                        if (result.length <= count) {
                             return true
                         }
                         return false
@@ -317,8 +311,7 @@ class Pile {
 
                 let before = this.selfConditions.before
                 let after = this.selfConditions.after
-
-                let params = parameter
+                let params = [parameter]
                 let loop = 1
                 if (this.method.params.length > 0) {
                     params = this.method.params
@@ -336,9 +329,9 @@ class Pile {
                     if (loop > 1) {
                         param = [params[i]]
                     }
-                    after && after(null, i)
+                    before && before(param, i)
                     this.method.result = await object[this.method.name].apply(object, param)
-                    before && before(this.method.result, i)
+                    after && after(this.method.result, i)
                 }
 
                 if (!this.nextPile) {

@@ -1,13 +1,15 @@
-require('./charging-pile.js')
+require('../charging-pile.js')
+require("should")
+
 const fetch = require('node-fetch')
 
 class DB {
     GETTest() {
-        console.log ("DB.GETTest")
+        return "DB.GETTest"
     }
     myTest(tt, qq) {
         console.log('print my ' + tt + ' ' + qq)
-        return { code: 0 }
+        return {code: 0}
     }
 
     myTest1(qq) {
@@ -24,10 +26,8 @@ class DB {
 
 class Network {
 
-    GETTest(text) {
-        console.log (text)
-        console.log ("Network.GETTest")
-        return {rr: 12}
+    GETTest() {
+        return "Network.GETTest"
     }
     youTest(tt) {
         console.log('you ' + tt)
@@ -49,11 +49,28 @@ class Network {
 
 }
 
-DB.invoke.myTest1.connect
-Network.invoke.GETTest()
+describe("测方法桩功能", function() {
 
+    it("测试连续调用", function() {
+        Network.invoke.GETTest.before((result)=> {
+            result.should.eql("Network.GETTest");
+        }).connect
+        DB.invoke.GETTest().after((parma)=> {
+            parma.should.eql("Network.GETTest");
+        }).before((result=> {
+            result.should.eql("DB.GETTest");
+        }))
+    })
+    
+    it("查询一个记录", function() {
+        
+    })
 
+    it("更新一个记录", function() {
+        
+    })
 
-
-
-
+    it("删除一个记录", function() {
+        
+    })
+});
